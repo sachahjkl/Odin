@@ -3122,6 +3122,10 @@ gb_internal int print_show_help(String const arg0, String command, String option
 				print_usage_line(3, "-debug-info:same-code   Debug information which adds no instruction: the generated code is");
 				print_usage_line(3, "                        the code of -debug-info:none, at every optimization mode.");
 			print_usage_line(2, "The default is -debug-info:full with -debug, and -debug-info:none without it.");
+			print_usage_line(2, "-debug-info:same-code writes the line tables, the types and the variables, without the aids of 'full':");
+				print_usage_line(3, "A variable that is not in a stack slot of its own (a pointer parameter, a parameter passed");
+				print_usage_line(3, "by pointer, 'context', a 'for &v', a 'using' field) is located by a value. A debugger can");
+				print_usage_line(3, "report it as optimized out, with -o:none too.");
 		}
 	}
 

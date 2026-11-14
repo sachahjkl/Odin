@@ -1504,9 +1504,19 @@ gb_internal LLVMMetadataRef lb_debug_type(lbModule *m, Type *type) {
 // A variable whose address is not a stack slot of its own (an argument, or an element or a pointer it refers to)
 // would have its location tracked with `DBG_VALUE`s through every block of the procedure,
 // so it is described through a stack slot holding that address instead
-gb_internal LLVMValueRef lb_debug_storage(lbProcedure *p, LLVMValueRef storage, LLVMMetadataRef *expr) {
+//
+// NOTE: `-debug-info:same-code` makes no such slot, as the slot and its store are instructions that a build
+// with no debug information does not have. The address is described as a value instead (`*is_value`),
+// which is what the optimizer makes of the slot
+gb_internal LLVMValueRef lb_debug_storage(lbProcedure *p, LLVMValueRef storage, LLVMMetadataRef *expr, bool *is_value) {
 	bool is_argument = LLVMIsAArgument(storage) != nullptr;
 	if (!is_argument && (!LLVMIsAInstruction(storage) || LLVMIsAAllocaInst(storage))) {
+		return storage;
+	}
+	if (build_debug_info_keeps_code()) {
+		uint64_t deref = 0x06; // DW_OP_deref
+		*expr = LLVMDIBuilderCreateExpression(p->module->debug_builder, &deref, 1);
+		*is_value = true;
 		return storage;
 	}
 	LLVMBasicBlockRef insert_block = LLVMGetInsertBlock(p->builder);
@@ -1518,6 +1528,18 @@ gb_internal LLVMValueRef lb_debug_storage(lbProcedure *p, LLVMValueRef storage, 
 	uint64_t deref = 0x06; // DW_OP_deref
 	*expr = LLVMDIBuilderCreateExpression(p->module->debug_builder, &deref, 1);
 	return slot;
+}
+
+gb_internal void lb_debug_insert_variable_at_end(lbModule *m, LLVMValueRef storage, LLVMMetadataRef var_info, LLVMMetadataRef expr, LLVMMetadataRef debug_loc, LLVMBasicBlockRef block, bool is_value) {
+	if (is_value) {
+#if LLVM_VERSION_MAJOR <= 18
+		LLVMDIBuilderInsertDbgValueAtEnd(m->debug_builder, storage, var_info, expr, debug_loc, block);
+#else
+		LLVMDIBuilderInsertDbgValueRecordAtEnd(m->debug_builder, storage, var_info, expr, debug_loc, block);
+#endif
+	} else {
+		LLVMDIBuilderInsertDeclareAtEnd(m->debug_builder, storage, var_info, expr, debug_loc, block);
+	}
 }
 
 gb_internal void lb_add_debug_local_variable(lbProcedure *p, LLVMValueRef ptr, Type *type, Token const &token) {
@@ -1578,13 +1600,10 @@ gb_internal void lb_add_debug_local_variable(lbProcedure *p, LLVMValueRef ptr, T
 	LLVMMetadataRef llvm_debug_loc = lb_debug_location_from_token_pos(p, token.pos);
 	LLVMMetadataRef llvm_expr = LLVMDIBuilderCreateExpression(m->debug_builder, nullptr, 0);
 	lb_set_llvm_metadata(m, ptr, llvm_expr);
-	storage = lb_debug_storage(p, storage, &llvm_expr);
+	bool is_value = false;
+	storage = lb_debug_storage(p, storage, &llvm_expr, &is_value);
 
-#if LLVM_VERSION_MAJOR <= 18
-	LLVMDIBuilderInsertDeclareAtEnd(m->debug_builder, storage, var_info, llvm_expr, llvm_debug_loc, block);
-#else
-	LLVMDIBuilderInsertDeclareRecordAtEnd(m->debug_builder, storage, var_info, llvm_expr, llvm_debug_loc, block);
-#endif
+	lb_debug_insert_variable_at_end(m, storage, var_info, llvm_expr, llvm_debug_loc, block, is_value);
 }
 
 gb_internal void lb_add_debug_param_variable(lbProcedure *p, LLVMValueRef ptr, Type *type, Token const &token, unsigned arg_number, lbBlock *block) {
@@ -1644,12 +1663,13 @@ gb_internal void lb_add_debug_param_variable(lbProcedure *p, LLVMValueRef ptr, T
 	LLVMMetadataRef llvm_debug_loc = lb_debug_location_from_token_pos(p, token.pos);
 	LLVMMetadataRef llvm_expr = LLVMDIBuilderCreateExpression(m->debug_builder, nullptr, 0);
 	lb_set_llvm_metadata(m, ptr, llvm_expr);
-	storage = lb_debug_storage(p, storage, &llvm_expr);
+	bool is_value = false;
+	storage = lb_debug_storage(p, storage, &llvm_expr, &is_value);
 
 	// NOTE(bill, 2022-02-01): For parameter values, you must insert them at the end of the decl block
 	// The reason is that if the parameter is at index 0 and a pointer, there is not such things as an
 	// instruction "before" it.
-	LLVMDIBuilderInsertDeclareAtEnd(m->debug_builder, storage, var_info, llvm_expr, llvm_debug_loc, block->block);
+	lb_debug_insert_variable_at_end(m, storage, var_info, llvm_expr, llvm_debug_loc, block->block, is_value);
 }
 
 
