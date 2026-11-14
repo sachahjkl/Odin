@@ -1603,6 +1603,13 @@ gb_internal void lb_add_debug_local_variable(lbProcedure *p, LLVMValueRef ptr, T
 	bool is_value = false;
 	storage = lb_debug_storage(p, storage, &llvm_expr, &is_value);
 
+	if (build_debug_info_keeps_code() && !is_value && LLVMIsAAllocaInst(storage)) {
+		// NOTE: up to LLVM 18 the declaration is a call instruction. In the current block it can be between a load
+		// and the one use of that load, and the fast instruction selector of LLVM then does not fold the load.
+		// The declaration of a stack slot holds for the whole procedure, so it goes with the slots
+		block = p->decl_block->block;
+	}
+
 	lb_debug_insert_variable_at_end(m, storage, var_info, llvm_expr, llvm_debug_loc, block, is_value);
 }
 
