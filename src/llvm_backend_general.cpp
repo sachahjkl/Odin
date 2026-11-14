@@ -562,7 +562,9 @@ gb_internal bool lb_init_generator(lbGenerator *gen, Checker *c) {
 	}
 
 	array_init(&gen->debug_types_modules, heap_allocator());
-	if (build_debug_info_enabled() && USE_SEPARATE_MODULES) {
+	// NOTE: not for `-debug-info:same-code`. Each debug types module is one more object to link, and it holds a variable
+	// that keeps its types: data that a build with no debug information does not have. Each module then defines the types it uses
+	if (build_debug_info_enabled() && !build_debug_info_keeps_code() && USE_SEPARATE_MODULES) {
 		isize const debug_types_module_count = 8;
 		for (isize i = 0; i < debug_types_module_count; i++) {
 			lbModule *m = permanent_alloc_item<lbModule>();
