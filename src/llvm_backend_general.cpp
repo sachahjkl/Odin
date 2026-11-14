@@ -1946,6 +1946,11 @@ gb_internal bool lb_try_copy_loaded_aggregate(lbProcedure *p, LLVMValueRef dst, 
 	}
 	isize steps = 0;
 	for (LLVMValueRef i = LLVMGetLastInstruction(block); i != load; i = LLVMGetPreviousInstruction(i)) {
+		if (i != nullptr && build_debug_info_keeps_code() && LLVMIsADbgInfoIntrinsic(i)) {
+			// NOTE: up to LLVM 18 a debug variable is a call instruction in the block. For `-debug-info:same-code`
+			// it is not counted and it does not end the search, as a build with no debug information does not have it
+			continue;
+		}
 		if (i == nullptr || ++steps > 16 ||
 		    LLVMIsAStoreInst(i) || LLVMIsACallInst(i) || LLVMIsAInvokeInst(i) ||
 		    LLVMIsAAtomicRMWInst(i) || LLVMIsAAtomicCmpXchgInst(i)) {
