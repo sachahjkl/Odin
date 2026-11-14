@@ -273,6 +273,14 @@ enum ErrorPosStyle {
 	ErrorPosStyle_COUNT
 };
 
+// The kind of debug information that the back end writes, `-debug-info:<string>`
+enum DebugInfoKind : u8 {
+	DebugInfoKind_Default,  // not given: `full` with `-debug`, `none` without it
+	DebugInfoKind_None,     // no debug information
+	DebugInfoKind_Full,     // debug information, with the aids for a debugger that add instructions to the generated code
+	DebugInfoKind_SameCode, // debug information that adds no instruction: the generated code is that of `none`
+};
+
 enum RelocMode : u8 {
 	RelocMode_Default,
 	RelocMode_Static,
@@ -670,6 +678,7 @@ struct BuildContext {
 	bool   print_linker_flags;
 
 	RelocMode      reloc_mode;
+	DebugInfoKind  debug_info_kind;
 	StackProtector stack_protector;
 
 	bool   disable_red_zone;
@@ -722,6 +731,18 @@ gb_global BuildContext build_context = {0};
 
 gb_internal bool IS_ODIN_DEBUG(void) {
 	return build_context.ODIN_DEBUG;
+}
+
+// Whether the back end writes debug information.
+// NOTE: this is not `ODIN_DEBUG`, which is the constant that a program reads: `-debug-info:<string>` chooses one without the other
+gb_internal bool build_debug_info_enabled(void) {
+	return build_context.debug_info_kind != DebugInfoKind_None;
+}
+
+// Whether the debug information must add no instruction to the generated code (`-debug-info:same-code`).
+// Every place of the back end that makes code only for a debugger asks this, at every optimization level
+gb_internal bool build_debug_info_keeps_code(void) {
+	return build_context.debug_info_kind == DebugInfoKind_SameCode;
 }
 
 
@@ -2123,6 +2144,10 @@ gb_internal void init_build_context(TargetMetrics *cross_target, Subtarget subta
 		init_android_values(bc->build_mode == BuildMode_Executable && (bc->command_kind & Command__does_build) != 0);
 	}
 
+	if (bc->debug_info_kind == DebugInfoKind_Default) {
+		bc->debug_info_kind = bc->ODIN_DEBUG ? DebugInfoKind_Full : DebugInfoKind_None;
+	}
+
 	if (!bc->custom_optimization_level) {
 		// NOTE(bill): when building with `-debug` but not specifying an optimization level
 		// default to `-o:none` to improve the debug symbol generation by default
@@ -2596,7 +2621,7 @@ gb_internal bool init_build_paths(String init_filename) {
 		bc->build_paths[BuildPath_Output] = output_path;
 	}
 
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		if (build_context.metrics.os == TargetOs_windows) {
 			if (bc->pdb_filepath.len > 0) {
 				bc->build_paths[BuildPath_Symbols] = path_from_string(ha, bc->pdb_filepath);

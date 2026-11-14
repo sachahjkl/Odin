@@ -107,7 +107,7 @@ gb_internal WORKER_TASK_PROC(lb_init_module_worker_proc) {
 		"PIC Level", 9,
 		LLVMValueAsMetadata(LLVMConstInt(LLVMInt32TypeInContext(m->ctx), get_reloc_mode(), true)));
 
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		enum {DEBUG_METADATA_VERSION = 3};
 
 		LLVMMetadataRef debug_ref = LLVMValueAsMetadata(LLVMConstInt(LLVMInt32TypeInContext(m->ctx), DEBUG_METADATA_VERSION, true));
@@ -562,7 +562,7 @@ gb_internal bool lb_init_generator(lbGenerator *gen, Checker *c) {
 	}
 
 	array_init(&gen->debug_types_modules, heap_allocator());
-	if (build_context.ODIN_DEBUG && USE_SEPARATE_MODULES) {
+	if (build_debug_info_enabled() && USE_SEPARATE_MODULES) {
 		isize const debug_types_module_count = 8;
 		for (isize i = 0; i < debug_types_module_count; i++) {
 			lbModule *m = permanent_alloc_item<lbModule>();

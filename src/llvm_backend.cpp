@@ -750,7 +750,7 @@ gb_internal lbValue lb_map_get_proc_for_type(lbModule *m, Type *type) {
 
 	LLVMSetLinkage(p->value, LLVMInternalLinkage);
 	lb_add_attribute_to_proc(m, p->value, "nounwind");
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		lb_add_attribute_to_proc(m, p->value, "noinline");
 	}
 
@@ -899,7 +899,7 @@ gb_internal lbValue lb_map_set_proc_for_type(lbModule *m, Type *type) {
 
 	LLVMSetLinkage(p->value, LLVMInternalLinkage);
 	lb_add_attribute_to_proc(m, p->value, "nounwind");
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		lb_add_attribute_to_proc(m, p->value, "noinline");
 	}
 
@@ -2705,7 +2705,7 @@ gb_internal void lb_create_global_procedures_and_types(lbGenerator *gen, Checker
 		case Entity_Procedure:
 			break;
 		case Entity_Constant:
-			if (build_context.ODIN_DEBUG) {
+			if (build_debug_info_enabled()) {
 				lb_add_debug_info_for_global_constant_from_entity(gen, e);
 			}
 			break;
@@ -2923,7 +2923,7 @@ gb_internal WORKER_TASK_PROC(lb_llvm_module_pass_worker_proc) {
 	LLVMPassBuilderOptionsRef pb_options = LLVMCreatePassBuilderOptions();
 	defer (LLVMDisposePassBuilderOptions(pb_options));
 
-	if (build_context.ODIN_DEBUG && build_context.optimization_level >= OptimizationLevel_Minimal) {
+	if (build_debug_info_enabled() && build_context.optimization_level >= OptimizationLevel_Minimal) {
 		// NOTE(bill): assignment tracking follows each variable's stores through the optimizations, so more of them keep
 		// a location; it must run first, and it sets the `debug-info-assignment-tracking` module flag itself.
 		// It is a function pass, wrapped so the pipeline is still parsed as one of module passes.
@@ -3587,7 +3587,7 @@ gb_internal bool lb_generate_code(lbGenerator *gen) {
 	CheckerInfo *info = gen->info;
 
 #if LLVM_VERSION_MAJOR >= 22
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		// NOTE(bill): the files are hashed for their debug info on the thread pool, while the stages below are mostly on one thread.
 		// Nothing waits for them: a file not hashed yet when its debug info is made is hashed then.
 		for (auto const &entry : info->packages) {
@@ -3963,7 +3963,7 @@ gb_internal bool lb_generate_code(lbGenerator *gen) {
 		}
 	}
 
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		// NOTE(bill): gdb runs the pretty printers of `base/runtime/odin_debugger.py` from the `.debug_gdb_scripts` section of an ELF binary,
 		// once the user trusts its directory; lldb reads no such section.
 		// The section is written in assembly, as a global cannot be made a section that is never loaded into memory,
@@ -4029,7 +4029,7 @@ gb_internal bool lb_generate_code(lbGenerator *gen) {
 	gen->cleanup_runtime = lb_create_cleanup_runtime(default_module);
 
 
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		for (auto const &entry : builtin_pkg->scope->elements) {
 			Entity *e = entry.value;
 			lb_add_debug_info_for_global_constant_from_entity(gen, e);
@@ -4064,7 +4064,7 @@ gb_internal bool lb_generate_code(lbGenerator *gen) {
 		lb_debug_generate_types_modules(gen, do_threading);
 	}
 
-	if (build_context.ODIN_DEBUG) {
+	if (build_debug_info_enabled()) {
 		TIME_SECTION("LLVM Debug Info Complete Types and Finalize");
 		lb_debug_info_complete_types_and_finalize(gen, do_threading);
 

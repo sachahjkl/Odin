@@ -447,7 +447,7 @@ try_cross_linking:;
 				link_settings = gb_string_append_fmt(link_settings, " /winsysroot:%.*s", LIT(build_context.windows_sdk_root));
 			}
 
-			if (build_context.ODIN_DEBUG) {
+			if (build_debug_info_enabled()) {
 				link_settings = gb_string_append_fmt(link_settings, " /DEBUG");
 				if (build_context.build_mode != BuildMode_StaticLibrary) {
 					// NOTE(bill): `/opt:ref` would also fold identical functions, which is slow and confuses the debugger
@@ -1108,7 +1108,7 @@ try_cross_linking:;
 				link_command_line = gb_string_appendc(link_command_line, " -flto=thin");
 				link_command_line = gb_string_append_fmt(link_command_line, " -flto-jobs=%d ", build_context.thread_count);
 
-				if (build_context.ODIN_DEBUG) {
+				if (build_debug_info_enabled()) {
 					link_command_line = gb_string_appendc(link_command_line, " -g ");
 				}
 
@@ -1144,7 +1144,7 @@ try_cross_linking:;
 				return result;
 			}
 
-			if (is_osx && build_context.ODIN_DEBUG) {
+			if (is_osx && build_debug_info_enabled()) {
 				// NOTE: macOS links DWARF symbols dynamically. Dsymutil will map the stubs in the exe
 				// to the symbols in the object file
 				result = system_exec_command_line_app("dsymutil", "dsymutil \"%.*s\"", LIT(output_filename));

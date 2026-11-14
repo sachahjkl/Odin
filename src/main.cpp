@@ -421,6 +421,7 @@ enum BuildFlagKind {
 	BuildFlag_Target,
 	BuildFlag_Subtarget,
 	BuildFlag_Debug,
+	BuildFlag_DebugInfo,
 	BuildFlag_DisableAssert,
 	BuildFlag_NoBoundsCheck,
 	BuildFlag_WebkitSwitchWorkaround,
@@ -701,6 +702,7 @@ gb_internal bool parse_build_flags(Array<String> args) {
 	add_flag(&build_flags, BuildFlag_Target,                  str_lit("target"),                    BuildFlagParam_String,  Command__does_check);
 	add_flag(&build_flags, BuildFlag_Subtarget,               str_lit("subtarget"),                 BuildFlagParam_String,  Command__does_check);
 	add_flag(&build_flags, BuildFlag_Debug,                   str_lit("debug"),                     BuildFlagParam_None,    Command__does_check);
+	add_flag(&build_flags, BuildFlag_DebugInfo,               str_lit("debug-info"),                BuildFlagParam_String,  Command__does_build);
 	add_flag(&build_flags, BuildFlag_DisableAssert,           str_lit("disable-assert"),            BuildFlagParam_None,    Command__does_check);
 	add_flag(&build_flags, BuildFlag_NoBoundsCheck,           str_lit("no-bounds-check"),           BuildFlagParam_None,    Command__does_check);
 	add_flag(&build_flags, BuildFlag_WebkitSwitchWorkaround,  str_lit("webkit-switch-workaround"),  BuildFlagParam_None,    Command__does_check);
@@ -1456,6 +1458,19 @@ gb_internal bool parse_build_flags(Array<String> args) {
 
 						case BuildFlag_Debug:
 							build_context.ODIN_DEBUG = true;
+							break;
+						case BuildFlag_DebugInfo:
+							GB_ASSERT(value.kind == ExactValue_String);
+							if (str_eq_ignore_case(value.value_string, str_lit("none"))) {
+								build_context.debug_info_kind = DebugInfoKind_None;
+							} else if (str_eq_ignore_case(value.value_string, str_lit("full"))) {
+								build_context.debug_info_kind = DebugInfoKind_Full;
+							} else if (str_eq_ignore_case(value.value_string, str_lit("same-code"))) {
+								build_context.debug_info_kind = DebugInfoKind_SameCode;
+							} else {
+								gb_printf_err("-debug-info:<string> options are 'none', 'full', and 'same-code'\n");
+								bad_flags = true;
+							}
 							break;
 						case BuildFlag_DisableAssert:
 							build_context.ODIN_DISABLE_ASSERT = true;
@@ -3095,6 +3110,18 @@ gb_internal int print_show_help(String const arg0, String command, String option
 	if (run_or_build) {
 		if (print_flag("-debug")) {
 			print_usage_line(2, "Enables debug information, and defines the global constant ODIN_DEBUG to be 'true'. Sets -o:none by default.");
+		}
+
+		if (print_flag("-debug-info:<string>")) {
+			print_usage_line(2, "Sets the kind of debug information that is written, with or without -debug.");
+			print_usage_line(2, "It does not define ODIN_DEBUG and it does not change the default of -o: only -debug does.");
+			print_usage_line(2, "Available options:");
+				print_usage_line(3, "-debug-info:none        No debug information.");
+				print_usage_line(3, "-debug-info:full        Debug information, with aids for a debugger which add instructions");
+				print_usage_line(3, "                        to the generated code.");
+				print_usage_line(3, "-debug-info:same-code   Debug information which adds no instruction: the generated code is");
+				print_usage_line(3, "                        the code of -debug-info:none, at every optimization mode.");
+			print_usage_line(2, "The default is -debug-info:full with -debug, and -debug-info:none without it.");
 		}
 	}
 
@@ -4978,7 +5005,7 @@ end_of_code_gen:;
 			char const *filename = cast(char const *)exe_name.text;
 			gb_file_remove(filename);
 
-			if (build_context.ODIN_DEBUG) {
+			if (build_debug_info_enabled()) {
 				if (build_context.metrics.os == TargetOs_windows || build_context.metrics.os == TargetOs_darwin) {
 					String symbol_path = path_to_string(heap_allocator(), build_context.build_paths[BuildPath_Symbols]);
 					defer (gb_free(heap_allocator(), symbol_path.text));
