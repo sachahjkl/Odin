@@ -3128,6 +3128,7 @@ gb_internal int print_show_help(String const arg0, String command, String option
 				print_usage_line(3, "report it as optimized out, with -o:none too.");
 				print_usage_line(3, "A label has no block of its own to put a breakpoint on.");
 				print_usage_line(3, "The range value of a loop over a #soa value has no variable.");
+				print_usage_line(3, "The procedures generated for a map type can be inlined.");
 		}
 	}
 

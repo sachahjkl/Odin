@@ -750,7 +750,8 @@ gb_internal lbValue lb_map_get_proc_for_type(lbModule *m, Type *type) {
 
 	LLVMSetLinkage(p->value, LLVMInternalLinkage);
 	lb_add_attribute_to_proc(m, p->value, "nounwind");
-	if (build_debug_info_enabled()) {
+	if (build_debug_info_enabled() && !build_debug_info_keeps_code()) {
+		// NOTE: not for `-debug-info:same-code`, as the attribute decides what the optimizer inlines
 		lb_add_attribute_to_proc(m, p->value, "noinline");
 	}
 
@@ -899,7 +900,8 @@ gb_internal lbValue lb_map_set_proc_for_type(lbModule *m, Type *type) {
 
 	LLVMSetLinkage(p->value, LLVMInternalLinkage);
 	lb_add_attribute_to_proc(m, p->value, "nounwind");
-	if (build_debug_info_enabled()) {
+	if (build_debug_info_enabled() && !build_debug_info_keeps_code()) {
+		// NOTE: not for `-debug-info:same-code`, as the attribute decides what the optimizer inlines
 		lb_add_attribute_to_proc(m, p->value, "noinline");
 	}
 
