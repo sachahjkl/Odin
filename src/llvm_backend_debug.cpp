@@ -1530,6 +1530,20 @@ gb_internal LLVMValueRef lb_debug_storage(lbProcedure *p, LLVMValueRef storage, 
 	return slot;
 }
 
+// Whether `-debug-info:same-code` can describe the variables of a procedure at all.
+// NOTE: with `-o:minimal` it cannot. That mode promotes the stack slots (`sroa`) and then uses the fast instruction selector
+// of LLVM, which does not fold a load into its use when a debug variable reads the loaded value too.
+// So a described variable changes the generated code there, and only the line table and the types are written
+gb_internal bool lb_debug_info_describes_variables(void) {
+	if (!build_debug_info_keeps_code()) {
+		return true;
+	}
+	if (build_context.optimization_level == OptimizationLevel_Minimal) {
+		return false;
+	}
+	return !(build_context.fast_isel && build_context.optimization_level > OptimizationLevel_Minimal);
+}
+
 gb_internal void lb_debug_insert_variable_at_end(lbModule *m, LLVMValueRef storage, LLVMMetadataRef var_info, LLVMMetadataRef expr, LLVMMetadataRef debug_loc, LLVMBasicBlockRef block, bool is_value) {
 	if (is_value) {
 #if LLVM_VERSION_MAJOR <= 18
@@ -1553,6 +1567,9 @@ gb_internal void lb_add_debug_local_variable(lbProcedure *p, LLVMValueRef ptr, T
 		return;
 	}
 	if (p->body == nullptr) {
+		return;
+	}
+	if (!lb_debug_info_describes_variables()) {
 		return;
 	}
 
@@ -1624,6 +1641,9 @@ gb_internal void lb_add_debug_param_variable(lbProcedure *p, LLVMValueRef ptr, T
 		return;
 	}
 	if (p->body == nullptr) {
+		return;
+	}
+	if (!lb_debug_info_describes_variables()) {
 		return;
 	}
 

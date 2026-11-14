@@ -3129,6 +3129,10 @@ gb_internal int print_show_help(String const arg0, String command, String option
 				print_usage_line(3, "A label has no block of its own to put a breakpoint on.");
 				print_usage_line(3, "The range value of a loop over a #soa value has no variable.");
 				print_usage_line(3, "The procedures generated for a map type can be inlined.");
+				print_usage_line(3, "With -o:minimal no local variable and no parameter is described: there, LLVM generates");
+				print_usage_line(3, "other code for a value that a debug variable reads.");
+			print_usage_line(2, "The compiler gives LLVM the same instructions with -debug-info:same-code and with -debug-info:none.");
+			print_usage_line(2, "LLVM can still generate other code from them in a few procedures; compare the two builds to be sure.");
 		}
 	}
 
