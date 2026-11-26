@@ -21,8 +21,13 @@ pcg_random_generator_proc :: proc(data: rawptr, mode: runtime.Random_Generator_M
 		return (xor_shifted >> rot) | (xor_shifted << ((-rot) & 63))
 	}
 
-	@(thread_local)
-	global_rand_seed: PCG_Random_State
+	when ODIN_OS == .Modus {
+		@(static)
+		global_rand_seeds: [_MODUS_THREAD_CAPACITY]PCG_Random_State
+	} else {
+		@(thread_local)
+		global_rand_seed: PCG_Random_State
+	}
 
 	init :: proc "contextless" (r: ^PCG_Random_State, seed: u64) {
 		seed := seed
@@ -38,7 +43,11 @@ pcg_random_generator_proc :: proc(data: rawptr, mode: runtime.Random_Generator_M
 
 	r: ^PCG_Random_State = ---
 	if data == nil {
-		r = &global_rand_seed
+		when ODIN_OS == .Modus {
+			r = &global_rand_seeds[_modus_thread_slot()]
+		} else {
+			r = &global_rand_seed
+		}
 	} else {
 		r = cast(^PCG_Random_State)data
 	}

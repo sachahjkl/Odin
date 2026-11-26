@@ -5,6 +5,7 @@
 #+build !netbsd
 #+build !linux
 #+build !windows
+#+build !modus
 package mem_virtual
 
 _reserve :: proc "contextless" (size: uint, address_hint: uintptr) -> (data: []byte, err: Allocator_Error) {

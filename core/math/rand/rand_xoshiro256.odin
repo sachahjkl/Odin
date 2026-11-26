@@ -47,8 +47,13 @@ xoshiro256_random_generator_proc :: proc(data: rawptr, mode: runtime.Random_Gene
 		}
 	}
 
-	@(thread_local)
-	global_rand_seed: Xoshiro256_Random_State
+	when ODIN_OS == .Modus {
+		@(static)
+		global_rand_seeds: [_MODUS_THREAD_CAPACITY]Xoshiro256_Random_State
+	} else {
+		@(thread_local)
+		global_rand_seed: Xoshiro256_Random_State
+	}
 
 	init :: proc "contextless" (r: ^Xoshiro256_Random_State, seed: u64) {
 		// splitmix64 to expand a 64-bit seed into 256 bits of state
@@ -74,7 +79,11 @@ xoshiro256_random_generator_proc :: proc(data: rawptr, mode: runtime.Random_Gene
 
 	r: ^Xoshiro256_Random_State = ---
 	if data == nil {
-		r = &global_rand_seed
+		when ODIN_OS == .Modus {
+			r = &global_rand_seeds[_modus_thread_slot()]
+		} else {
+			r = &global_rand_seed
+		}
 	} else {
 		r = cast(^Xoshiro256_Random_State)data
 	}

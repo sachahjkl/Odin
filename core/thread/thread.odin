@@ -620,7 +620,7 @@ _select_context_for_thread :: proc(init_context: Maybe(runtime.Context)) -> runt
 	*/
 	when !ODIN_DEFAULT_TO_NIL_ALLOCATOR {
 		if ctx.temp_allocator.procedure == runtime.default_temp_allocator_proc {
-			ctx.temp_allocator.data = &runtime.global_default_temp_allocator_data
+			ctx.temp_allocator.data = runtime.global_default_temp_allocator_data_ptr()
 		}
 	}
 	return ctx

@@ -40,7 +40,7 @@ gb_internal String get_default_microarchitecture() {
 		// x86-64-v2: (close to Nehalem) CMPXCHG16B, LAHF-SAHF, POPCNT, SSE3, SSE4.1, SSE4.2, SSSE3
 		// x86-64-v3: (close to Haswell) AVX, AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE, XSAVE
 		// x86-64-v4: AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
-		if (build_context.metrics.os == TargetOs_freestanding) {
+		if (build_context.metrics.os == TargetOs_freestanding || build_context.metrics.os == TargetOs_modus) {
 			default_march = str_lit("x86-64");
 		} else {
 			default_march = str_lit("x86-64-v2");
@@ -3970,7 +3970,7 @@ gb_internal bool lb_generate_code(lbGenerator *gen) {
 		// once the user trusts its directory; lldb reads no such section.
 		// The section is written in assembly, as a global cannot be made a section that is never loaded into memory,
 		// which is what keeps the linker from dropping it, and lets it merge the copies of several objects.
-		if (build_context.metrics.os != TargetOs_windows && build_context.metrics.os != TargetOs_darwin && !is_arch_wasm()) {
+		if (build_context.metrics.os != TargetOs_windows && build_context.metrics.os != TargetOs_darwin && build_context.metrics.os != TargetOs_modus && !is_arch_wasm()) {
 			String path = concatenate_strings(temporary_allocator(), odin_root_dir(), str_lit("base/runtime/odin_debugger.py"));
 			gbFileContents fc = gb_file_read_contents(heap_allocator(), false, alloc_cstring(temporary_allocator(), path));
 			if (fc.data != nullptr) {

@@ -56,7 +56,21 @@ container_of :: #force_inline proc "contextless" (ptr: $P/^$Field_Type, $T: type
 
 
 when !NO_DEFAULT_TEMP_ALLOCATOR {
-	@thread_local global_default_temp_allocator_data: Default_Temp_Allocator
+	when ODIN_OS == .Modus {
+		global_default_temp_allocator_data: [_MODUS_THREAD_CAPACITY]Default_Temp_Allocator
+
+		@(require_results)
+		global_default_temp_allocator_data_ptr :: #force_inline proc "contextless" () -> ^Default_Temp_Allocator {
+			return &global_default_temp_allocator_data[_modus_thread_index()]
+		}
+	} else {
+		@thread_local global_default_temp_allocator_data: Default_Temp_Allocator
+
+		@(require_results)
+		global_default_temp_allocator_data_ptr :: #force_inline proc "contextless" () -> ^Default_Temp_Allocator {
+			return &global_default_temp_allocator_data
+		}
+	}
 }
 
 // Initializes the global temporary allocator used as the default `context.temp_allocator`.
@@ -64,7 +78,7 @@ when !NO_DEFAULT_TEMP_ALLOCATOR {
 @(builtin, disabled=NO_DEFAULT_TEMP_ALLOCATOR)
 init_global_temporary_allocator :: proc "odin" (size: int, backup_allocator := context.allocator) {
 	when !NO_DEFAULT_TEMP_ALLOCATOR {
-		default_temp_allocator_init(&global_default_temp_allocator_data, size, backup_allocator)
+		default_temp_allocator_init(global_default_temp_allocator_data_ptr(), size, backup_allocator)
 	}
 }
 

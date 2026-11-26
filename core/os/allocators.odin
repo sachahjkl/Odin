@@ -12,15 +12,35 @@ file_allocator :: proc() -> runtime.Allocator {
 MAX_TEMP_ARENA_COUNT :: 2
 @(private="file")
 MAX_TEMP_ARENA_COLLISIONS :: MAX_TEMP_ARENA_COUNT - 1
-@(private="file", thread_local)
-global_default_temp_allocator_arenas: [MAX_TEMP_ARENA_COUNT]runtime.Arena
+
+when ODIN_OS == .Modus {
+	@(private="file")
+	_MODUS_TEMP_ARENA_THREADS :: 256
+	@(private="file")
+	global_default_temp_allocator_arenas: [_MODUS_TEMP_ARENA_THREADS][MAX_TEMP_ARENA_COUNT]runtime.Arena
+
+	@(private="file")
+	_temp_allocator_arenas_ptr :: #force_inline proc "contextless" () -> ^[MAX_TEMP_ARENA_COUNT]runtime.Arena {
+		slot := (_get_current_thread_id() - 1) & (_MODUS_TEMP_ARENA_THREADS - 1)
+		return &global_default_temp_allocator_arenas[slot]
+	}
+} else {
+	@(private="file", thread_local)
+	global_default_temp_allocator_arenas: [MAX_TEMP_ARENA_COUNT]runtime.Arena
+
+	@(private="file")
+	_temp_allocator_arenas_ptr :: #force_inline proc "contextless" () -> ^[MAX_TEMP_ARENA_COUNT]runtime.Arena {
+		return &global_default_temp_allocator_arenas
+	}
+}
 
 @(fini, private)
 temp_allocator_fini :: proc "contextless" () {
-	for &arena in global_default_temp_allocator_arenas {
+	arenas := _temp_allocator_arenas_ptr()
+	for &arena in arenas {
 		runtime.arena_destroy(&arena)
 	}
-	global_default_temp_allocator_arenas = {}
+	arenas^ = {}
 }
 
 Temp_Allocator :: struct {
@@ -37,9 +57,10 @@ TEMP_ALLOCATOR_GUARD_END :: proc(temp: Temp_Allocator) {
 @(deferred_out=TEMP_ALLOCATOR_GUARD_END)
 TEMP_ALLOCATOR_GUARD :: #force_inline proc(collisions: []runtime.Allocator, loc := #caller_location) -> Temp_Allocator {
 	assert(len(collisions) <= MAX_TEMP_ARENA_COLLISIONS, "Maximum collision count exceeded. MAX_TEMP_ARENA_COUNT must be increased!")
+	arenas := _temp_allocator_arenas_ptr()
 	good_arena: ^runtime.Arena
 	for i in 0..<MAX_TEMP_ARENA_COUNT {
-		good_arena = &global_default_temp_allocator_arenas[i]
+		good_arena = &arenas[i]
 		for c in collisions {
 			if good_arena == c.data {
 				good_arena = nil

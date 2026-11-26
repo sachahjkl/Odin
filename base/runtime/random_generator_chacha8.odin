@@ -57,10 +57,15 @@ default_random_generator :: proc "contextless" (state: ^Default_Random_State = n
 }
 
 default_random_generator_proc :: proc(data: rawptr, mode: Random_Generator_Mode, p: []byte) {
-	@(thread_local)
-	state: Default_Random_State
-
-	r: ^Default_Random_State = &state
+	when ODIN_OS == .Modus {
+		@(static)
+		states: [_MODUS_THREAD_CAPACITY]Default_Random_State
+		r: ^Default_Random_State = &states[_modus_thread_index()]
+	} else {
+		@(thread_local)
+		state: Default_Random_State
+		r: ^Default_Random_State = &state
+	}
 	if data != nil {
 		r = cast(^Default_Random_State)data
 	}

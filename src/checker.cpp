@@ -1312,6 +1312,7 @@ gb_internal void init_universal(void) {
 			{"JS",           TargetOs_js},
 			{"Orca",         TargetOs_orca},
 			{"Freestanding", TargetOs_freestanding},
+			{"Modus",        TargetOs_modus},
 		};
 
 		auto fields = add_global_enum_type(str_lit("Odin_OS_Type"), values, gb_count_of(values));
@@ -1681,6 +1682,7 @@ gb_internal void init_universal(void) {
 			switch (build_context.metrics.os) {
 			case TargetOs_freestanding:
 				/*check*/
+			case TargetOs_modus:
 			case TargetOs_linux:
 			case TargetOs_freebsd:
 			case TargetOs_netbsd:

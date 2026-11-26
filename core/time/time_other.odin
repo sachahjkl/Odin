@@ -8,6 +8,7 @@
 #+build !wasi
 #+build !windows
 #+build !orca
+#+build !modus
 package time
 
 _IS_SUPPORTED :: false

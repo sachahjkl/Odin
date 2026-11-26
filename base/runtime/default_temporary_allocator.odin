@@ -1,6 +1,6 @@
 package runtime
 
-DEFAULT_TEMP_ALLOCATOR_BACKING_SIZE: int : #config(DEFAULT_TEMP_ALLOCATOR_BACKING_SIZE, 4 * Megabyte)
+DEFAULT_TEMP_ALLOCATOR_BACKING_SIZE: int : #config(DEFAULT_TEMP_ALLOCATOR_BACKING_SIZE, 64 * Kilobyte when ODIN_OS == .Modus else 4 * Megabyte)
 NO_DEFAULT_TEMP_ALLOCATOR: bool : ODIN_OS == .Freestanding || ODIN_DEFAULT_TO_NIL_ALLOCATOR
 
 when NO_DEFAULT_TEMP_ALLOCATOR {
@@ -51,8 +51,9 @@ when NO_DEFAULT_TEMP_ALLOCATOR {
 
 	@(require_results)
 	default_temp_allocator_temp_begin :: proc(loc := #caller_location) -> (temp: Arena_Temp) {
-		if context.temp_allocator.data == &global_default_temp_allocator_data {
-			temp = arena_temp_begin(&global_default_temp_allocator_data.arena, loc)
+		data := global_default_temp_allocator_data_ptr()
+		if context.temp_allocator.data == data {
+			temp = arena_temp_begin(&data.arena, loc)
 		}
 		return
 	}
@@ -63,7 +64,7 @@ when NO_DEFAULT_TEMP_ALLOCATOR {
 
 	@(fini, private)
 	_destroy_temp_allocator_fini :: proc "contextless" () {
-		default_temp_allocator_destroy(&global_default_temp_allocator_data)
+		default_temp_allocator_destroy(global_default_temp_allocator_data_ptr())
 	}
 }
 

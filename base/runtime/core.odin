@@ -609,6 +609,7 @@ Raw_Quaternion256_Vector_Scalar :: struct {vector: [3]f64, scalar: f64}
 		JS,
 		Orca,
 		Freestanding,
+		Modus,
 	}
 */
 Odin_OS_Type :: type_of(ODIN_OS)
@@ -675,6 +676,7 @@ ALL_ODIN_OS_TYPES :: Odin_OS_Types{
 	.JS,
 	.Orca,
 	.Freestanding,
+	.Modus,
 }
 
 /*
@@ -901,7 +903,7 @@ __init_context :: proc "contextless" (c: ^Context) {
 
 	c.temp_allocator.procedure = default_temp_allocator_proc
 	when !NO_DEFAULT_TEMP_ALLOCATOR {
-		c.temp_allocator.data = &global_default_temp_allocator_data
+		c.temp_allocator.data = global_default_temp_allocator_data_ptr()
 	}
 	
 	when !ODIN_DISABLE_ASSERT {

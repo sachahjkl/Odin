@@ -26,6 +26,7 @@ enum TargetOsKind : u16 {
 	TargetOs_orca,
 
 	TargetOs_freestanding,
+	TargetOs_modus,
 
 	TargetOs_COUNT,
 };
@@ -44,6 +45,7 @@ gb_global String target_os_names[TargetOs_COUNT] = {
 	str_lit("orca"),
 
 	str_lit("freestanding"),
+	str_lit("modus"),
 };
 
 enum TargetArchKind : u16 {
@@ -972,6 +974,14 @@ gb_global TargetMetrics target_freestanding_riscv64 = {
 	str_lit("riscv64-unknown-gnu"),
 };
 
+gb_global TargetMetrics target_modus_amd64 = {
+	TargetOs_modus,
+	TargetArch_amd64,
+	8, 8, AMD64_MAX_ALIGNMENT, 512,
+	str_lit("x86_64-unknown-none-elf"),
+	TargetABI_SysV,
+};
+
 
 struct NamedTargetMetrics {
 	String name;
@@ -1017,6 +1027,8 @@ gb_global NamedTargetMetrics named_targets[] = {
 	{ str_lit("freestanding_arm32"), &target_freestanding_arm32 },
 
 	{ str_lit("freestanding_riscv64"), &target_freestanding_riscv64 },
+
+	{ str_lit("modus_amd64"), &target_modus_amd64 },
 };
 
 gb_global NamedTargetMetrics *selected_target_metrics;
@@ -2037,6 +2049,10 @@ gb_internal void init_build_context(TargetMetrics *cross_target, Subtarget subta
 			bc->no_plt = LLVM_VERSION_MAJOR >= 19;
 			break;
 		}
+	} else if (metrics->os == TargetOs_modus) {
+		if (bc->reloc_mode == RelocMode_Default) {
+			bc->reloc_mode = RelocMode_PIC;
+		}
 	} else if (subtarget == Subtarget_Playdate) {
 		// Uses generic triplet and arch to avoid issues with the playdates
 		// single precision float fpu as well as issues with function lowering
@@ -2195,7 +2211,7 @@ gb_internal void init_build_context(TargetMetrics *cross_target, Subtarget subta
 	}
 
 	bc->ODIN_VALGRIND_SUPPORT = false;
-	if (build_context.metrics.os != TargetOs_windows) {
+	if (build_context.metrics.os != TargetOs_windows && build_context.metrics.os != TargetOs_modus) {
 		switch (bc->metrics.arch) {
 		case TargetArch_amd64:
 			bc->ODIN_VALGRIND_SUPPORT = true;
@@ -2337,6 +2353,7 @@ gb_internal String infer_object_extension_from_build_context() {
 		case TargetOs_linux:
 
 		case TargetOs_freestanding:
+		case TargetOs_modus:
 			switch (build_context.metrics.abi) {
 			default:
 			case TargetABI_Default:

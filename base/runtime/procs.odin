@@ -25,6 +25,11 @@ when ODIN_NO_CRT && ODIN_OS == .Windows {
 		RtlMoveMemory(dst, src, len)
 		return dst
 	}
+} else when ODIN_OS == .Modus {
+	foreign _ {
+		@(link_name="memset")
+		memset :: proc "c" (ptr: rawptr, val: i32, len: int) -> rawptr ---
+	}
 } else when ODIN_NO_CRT || (ODIN_OS != .Orca && (ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32)) {
 	// NOTE: on wasm, calls to these procs are generated (by LLVM) with type `i32` instead of `int`.
 	//

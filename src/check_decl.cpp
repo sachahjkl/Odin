@@ -1802,6 +1802,10 @@ gb_internal void check_global_variable_decl(CheckerContext *ctx, Entity *e, Ast 
 	}
 	ac.link_name = handle_link_name(ctx, e->token, ac.link_name, ac.link_prefix, ac.link_suffix);
 
+	if (build_context.metrics.os == TargetOs_modus && e->Variable.thread_local_model.len != 0) {
+		error(e->token, "@(thread_local) is not supported on target OS 'modus'");
+		e->Variable.thread_local_model.len = 0;
+	}
 	if (is_arch_wasm() && e->Variable.thread_local_model.len != 0) {
 		e->Variable.thread_local_model.len = 0;
 		// NOTE(bill): ignore this message for the time being

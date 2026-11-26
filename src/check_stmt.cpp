@@ -2348,7 +2348,9 @@ gb_internal void check_value_decl_stmt(CheckerContext *ctx, Ast *node, u32 mod_f
 					error(e->token, "'thread_local' variables cannot be declared within a defer statement");
 				}
 			}
-			if (!build_context.no_thread_local) {
+			if (build_context.metrics.os == TargetOs_modus) {
+				error(e->token, "@(thread_local) is not supported on target OS 'modus'");
+			} else if (!build_context.no_thread_local) {
 				e->Variable.thread_local_model = ac.thread_local_model;
 			}
 		}

@@ -277,10 +277,15 @@ scan_runes :: proc(data: []byte, at_eof: bool) -> (advance: int, token: []byte, 
 		return
 	}
 
-	@thread_local ERROR_RUNE := []byte{0xef, 0xbf, 0xbd}
-
-	advance = 1
-	token = ERROR_RUNE
+	when ODIN_OS == .Modus {
+		@(static) ERROR_RUNE := [3]byte{0xef, 0xbf, 0xbd}
+		advance = 1
+		token = ERROR_RUNE[:]
+	} else {
+		@thread_local ERROR_RUNE := []byte{0xef, 0xbf, 0xbd}
+		advance = 1
+		token = ERROR_RUNE
+	}
 	return
 }
 // scan_words is a splitting procedure that returns each Unicode-space-separated word of text, excluding the surrounded spaces.
