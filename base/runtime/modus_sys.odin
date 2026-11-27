@@ -82,7 +82,6 @@ _Modus_Memory_Flag :: enum u64 {
 	Frames_Now  = 0,
 	Contiguous  = 1,
 	Uncommitted = 2,
-	Large_Pages = 3,
 }
 _Modus_Memory_Flags :: bit_set[_Modus_Memory_Flag; u64]
 

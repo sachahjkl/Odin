@@ -46,7 +46,7 @@ CONTEXT_READY_RING :: 19
 GRANT_STORAGE_RING :: 7
 GRANT_STORAGE_REGION :: 8
 GRANT_STORAGE_SERVICE :: 9
-CONTEXT_VALUE_STORAGE_FILE_SIZE :: 3
+CONTEXT_VALUE_STORAGE_FILE_SIZE :: 18
 CONTEXT_VALUE_SEED :: 9
 CONTEXT_VALUE_SEED_COUNT :: 4
 CONTEXT_VALUE_FIXED_RANGES_MAPPED :: 20
@@ -181,7 +181,6 @@ Memory_Flag :: enum u64 {
 	Frames_Now  = 0,
 	Contiguous  = 1,
 	Uncommitted = 2,
-	Large_Pages = 3,
 }
 Memory_Flags :: bit_set[Memory_Flag; u64]
 
@@ -203,7 +202,6 @@ Map_Flags :: bit_set[Map_Flag; u64]
 
 Fixed_Range :: enum u8 {
 	Module_Files       = 0,
-	Pointer_Themes     = 1,
 	Settings_Page      = 2,
 	Presentation_Page  = 3,
 	Plan_Values_Page   = 4,
@@ -212,11 +210,9 @@ Fixed_Range :: enum u8 {
 	Module_Tables      = 8,
 	Debug_Image        = 11,
 	Disk_Process_Page  = 12,
-	Font_Outlines      = 14,
 	Fresh_Bytes_Page   = 15,
 	Start_Policy_Pages = 16,
 	Edit_Target_Page   = 17,
-	Script_Fonts       = 18,
 }
 Fixed_Ranges :: bit_set[Fixed_Range; u64]
 #assert(size_of(Fixed_Ranges) == size_of(u64))
